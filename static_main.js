@@ -80,7 +80,7 @@ function createSidebarData (cate) {
         return {
             month: key,
             articles: _.map(value, function(article) {
-            	var link_addr = '/' + article_dir + article.file + '.html';
+            	var link_addr = '/' + article_dir + '/' + article.file + '.html';
                 return {
                     link: link_addr,
                     text: article.title
@@ -143,7 +143,7 @@ fs.readFile(proj_index_template, 'utf8', function (error, index_template) {
 	my_global.index.template.personal_template = document.getElementById('tpl-person').innerHTML;
 	my_global.index.template.link_template = document.getElementById('tpl-link').innerHTML; 		//jQuery("#tpl-link").text();
 	my_global.index.template.pagebar_template = document.getElementById('tpl-pagebar').innerHTML; 	//jQuery("#tpl-pagebar").text();
-	my_global.index.template.duoshuo_template = document.getElementById('tpl-duoshuo').innerHTML; 	//jQuery("#tpl-duoshuo").text();
+	//my_global.index.template.duoshuo_template = document.getElementById('tpl-duoshuo').innerHTML; 	//jQuery("#tpl-duoshuo").text();
 	
 //	jsdom.jQueryify(window, './jquery.js', function (w, jQuery) {
 //		// 把模板文件都读出来
