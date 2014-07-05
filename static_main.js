@@ -11,7 +11,8 @@ var mustache = require('./mustache.js');
 var _ = require('./underscore.js')._;
 
 var proj_path = '../peseus.github.io';
-var proj_index_template = proj_path + '/index.template.html';
+var proj_pageview_template = proj_path + '/pageview.template.html';
+var proj_articleview_template = proj_path + '/articleview.template.html';
 var proj_config = proj_path + '/post/index.json';
 var cate_prefix = "cat-";
 var article_dir = 'article';
@@ -95,7 +96,8 @@ function createSidebarData (cate) {
 // index.hml = /_/page1.html
 // /_/pagex.html x=[1,N]
 // /caty/pagex.html caty=[...]. x=[1,N]
-my_global.index = {};
+my_global.pageview = {};
+my_global.articleview = {};
 
 // 读取文章
 var articles = proj_config_data.articles;
@@ -127,35 +129,40 @@ for (var i = 0; i < articles.length; i++) {
 	}
 }
 
-// 读取首页文件
-fs.readFile(proj_index_template, 'utf8', function (error, index_template) {
+// 读取分页浏览模板
+fs.readFile(proj_pageview_template, 'utf8', function (error, template) {
 	if (error) {
 		throw error;
 	}
-	var document = jsdom(index_template);
+	var document = jsdom(template);
 	var window = document.parentWindow;
-	my_global.index.document = document;
-	my_global.index.window = window;
+	my_global.pageview.document = document;
+	my_global.pageview.window = window;
 	
-	my_global.index.template = {};
-	my_global.index.template.main_template = document.getElementById('tpl-main').innerHTML; 		//jQuery("#tpl-main").text();
-	my_global.index.template.sidebar_template = document.getElementById('tpl-sidebar').innerHTML; 	//jQuery("#tpl-sidebar").text();
-	my_global.index.template.personal_template = document.getElementById('tpl-person').innerHTML;
-	my_global.index.template.link_template = document.getElementById('tpl-link').innerHTML; 		//jQuery("#tpl-link").text();
-	my_global.index.template.pagebar_template = document.getElementById('tpl-pagebar').innerHTML; 	//jQuery("#tpl-pagebar").text();
-	//my_global.index.template.duoshuo_template = document.getElementById('tpl-duoshuo').innerHTML; 	//jQuery("#tpl-duoshuo").text();
+	my_global.pageview.template = {};
+	my_global.pageview.template.main_template = document.getElementById('tpl-main').innerHTML;
+	my_global.pageview.template.sidebar_template = document.getElementById('tpl-sidebar').innerHTML;
+	my_global.pageview.template.personal_template = document.getElementById('tpl-person').innerHTML;
+	my_global.pageview.template.link_template = document.getElementById('tpl-link').innerHTML;
+	my_global.pageview.template.pagebar_template = document.getElementById('tpl-pagebar').innerHTML;
+});
+
+// 读取阅读文章模板
+fs.readFile(proj_articleview_template, 'utf8', function (error, template) {
+	if (error) {
+		throw error;
+	}
+	var document = jsdom(template);
+	var window = document.parentWindow;
+	my_global.articleview.document = document;
+	my_global.articleview.window = window;
 	
-//	jsdom.jQueryify(window, './jquery.js', function (w, jQuery) {
-//		// 把模板文件都读出来
-//		console.log(w.document.innerHTML);
-//		my_global.index.template = {};
-//		my_global.index.template.main_template = jQuery("#tpl-main").text();
-//		my_global.index.template.sidebar_template = jQuery("#tpl-sidebar").text();
-//		my_global.index.template.personal_template = jQuery("#tpl-person").text();
-//		my_global.index.template.link_template = jQuery("#tpl-link").text();
-//		my_global.index.template.pagebar_template = jQuery("#tpl-pagebar").text();
-//		my_global.index.template.duoshuo_template = jQuery("#tpl-duoshuo").text();
-//	});
+	my_global.articleview.template = {};
+	my_global.articleview.template.main_template = document.getElementById('tpl-main').innerHTML;
+	my_global.articleview.template.sidebar_template = document.getElementById('tpl-sidebar').innerHTML;
+	my_global.articleview.template.personal_template = document.getElementById('tpl-person').innerHTML;
+	my_global.articleview.template.link_template = document.getElementById('tpl-link').innerHTML;
+	my_global.articleview.template.pagebar_template = document.getElementById('tpl-pagebar').innerHTML;
 });
 
 function createArticleView(article, article_info) {
@@ -176,20 +183,17 @@ function createArticleView(article, article_info) {
 			throw e;
 		}
 	}
-	var link_html = mustache.render(my_global.index.template.link_template, link_data);
-	var main_html = mustache.render(my_global.index.template.main_template, main_data);
-	var personal_html = mustache.render(my_global.index.template.personal_template, personal_data);
-	var sidebar_html = mustache.render(my_global.index.template.sidebar_template, sidebar_data);
+	var link_html = mustache.render(my_global.articleview.template.link_template, link_data);
+	var main_html = mustache.render(my_global.articleview.template.main_template, main_data);
+	var personal_html = mustache.render(my_global.articleview.template.personal_template, personal_data);
+	var sidebar_html = mustache.render(my_global.articleview.template.sidebar_template, sidebar_data);
 	
 	// 不能直接操作原文，只能对副本进行操作
 	var document = jsdom('');
-	document.innerHTML = my_global.index.document.innerHTML;
+	document.innerHTML = my_global.articleview.document.innerHTML;
 	var window = document.parentWindow;
 	
 	document.getElementsByClassName('main-body')[0].innerHTML = main_html;
-	document.getElementsByClassName('sidebar-nav')[0].innerHTML = sidebar_html;
-	document.getElementsByClassName('sidebar-links')[0].innerHTML = link_html;
-	document.getElementsByClassName('personal')[0].innerHTML = personal_html;
 	
 	// 插入文章内容
 	document.getElementsByClassName('article-content')[0].innerHTML = article_html;
@@ -208,6 +212,9 @@ function createArticleView(article, article_info) {
 	del.parentNode.removeChild(del);
 	del = document.getElementById('tpl-pagebar');
 	del.parentNode.removeChild(del);
+	document.getElementById('div-siderbar').innerHTML = '';
+	
+	//插入JS
 	fs.writeFileSync(dst_file, document.innerHTML);
 	console.log('写静态页面：' + dst_file + " 完成");
 }
@@ -229,22 +236,16 @@ function createPageView(cate_tag, total_page, page_num) {
 			throw e;
 		}
 	}
-	var link_html = mustache.render(my_global.index.template.link_template, link_data);
-	var main_html = mustache.render(my_global.index.template.main_template, main_data);
-	var pagebar_html = mustache.render(my_global.index.template.pagebar_template, pagebar_data);
-	var personal_html = mustache.render(my_global.index.template.personal_template, personal_data);
-	var sidebar_html = mustache.render(my_global.index.template.sidebar_template, sidebar_data);
+	var link_html = mustache.render(my_global.pageview.template.link_template, link_data);
+	var main_html = mustache.render(my_global.pageview.template.main_template, main_data);
+	var pagebar_html = mustache.render(my_global.pageview.template.pagebar_template, pagebar_data);
+	var personal_html = mustache.render(my_global.pageview.template.personal_template, personal_data);
+	var sidebar_html = mustache.render(my_global.pageview.template.sidebar_template, sidebar_data);
 	
 	// 不能直接操作原文，只能对副本进行操作
 	var document = jsdom('');
-	document.innerHTML = my_global.index.document.innerHTML;
+	document.innerHTML = my_global.pageview.document.innerHTML;
 	var window = document.parentWindow;
-	
-//	document.implementation.addFeature('FetchExternalResources', []);
-//	document.implementation.addFeature('ProcessExternalResources', []);
-//	document.implementation.addFeature('MutationEvents', []);
-	
-//	console.log(typeof document.getElementsByClassName('main-body')[0].appendChild);
 	
 	document.getElementsByClassName('main-body')[0].innerHTML = main_html;
 	document.getElementsByClassName('sidebar-nav')[0].innerHTML = sidebar_html;
@@ -296,7 +297,8 @@ function createPageView(cate_tag, total_page, page_num) {
 }
 
 var index_load_timer = setInterval(function () {
-	if ('undefined' !== typeof my_global.index.template) {
+	if ('undefined' !== typeof my_global.pageview.template &&
+			'undefined' !== typeof my_global.articleview.template) {
 		// 已经加载首页模板并且解析完毕
 		clearInterval(index_load_timer);
 		
